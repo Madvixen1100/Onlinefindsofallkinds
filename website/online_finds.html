@@ -1,0 +1,210 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Finds of All Kinds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Patrick Hand', cursive;
+      background-color: #ffe6f0;
+      color: #333;
+    }
+    header {
+      background-color: #ff99cc;
+      padding: 20px;
+      text-align: center;
+      color: white;
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 20px;
+      gap: 20px;
+      justify-content: center;
+    }
+    .group {
+      background-color: #fff0f5;
+      border: 2px solid #ffb6c1;
+      border-radius: 15px;
+      padding: 15px;
+      width: 340px;
+    }
+    .group h2 {
+      text-align: center;
+      color: #d63384;
+    }
+    .section {
+      margin-top: 15px;
+      background-color: #ffe4eb;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .section h3 {
+      margin-top: 0;
+      color: #c2185b;
+    }
+    .item {
+      background-color: #ffffff;
+      border-radius: 10px;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ffc0cb;
+    }
+    .item img {
+      width: 100%;
+      border-radius: 10px;
+    }
+    .item p {
+      margin: 10px 0;
+    }
+    .item a {
+      color: #e91e63;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .item a:hover {
+      text-decoration: underline;
+    }
+    .add-section {
+      text-align: center;
+      margin: 30px;
+      display: none;
+    }
+    .add-section input, .add-section textarea, .add-section select {
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ffb6c1;
+      border-radius: 8px;
+      font-family: 'Patrick Hand', cursive;
+    }
+    .add-section button {
+      padding: 10px 15px;
+      background-color: #ff69b4;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-family: 'Patrick Hand', cursive;
+    }
+  </style>
+</head>
+<body>
+  <header>Online Finds of All Kinds</header>
+
+  <div class="add-section" id="adminPanel">
+    <h3>Create Group (Folder)</h3>
+    <input type="text" id="groupName" placeholder="Group Name (e.g. Summer Finds)" />
+    <button onclick="addGroup()">Add Group</button>
+
+    <h3>Add Section to Group</h3>
+    <select id="groupSelect"></select><br>
+    <input type="text" id="sectionName" placeholder="Section Name (e.g. Shoes)" />
+    <button onclick="addSection()">Add Section</button>
+
+    <h3>Add Item to Section</h3>
+    <select id="groupForItem"></select>
+    <select id="sectionForItem"></select><br>
+    <input type="text" id="itemImage" placeholder="Image URL" /><br>
+    <textarea id="itemDesc" placeholder="Item Description"></textarea><br>
+    <input type="text" id="itemLink" placeholder="Purchase Link" /><br>
+    <button onclick="addItem()">Add Item</button>
+  </div>
+
+  <div class="container" id="board"></div>
+
+  <script>
+    const board = document.getElementById('board');
+    const groupSelect = document.getElementById('groupSelect');
+    const groupForItem = document.getElementById('groupForItem');
+    const sectionForItem = document.getElementById('sectionForItem');
+    const adminPanel = document.getElementById('adminPanel');
+
+    const groups = {};
+
+    // Enable admin panel if URL includes ?admin=true
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      adminPanel.style.display = 'block';
+    }
+
+    function addGroup() {
+      const name = document.getElementById('groupName').value;
+      if (!name || groups[name]) return;
+
+      groups[name] = {};
+
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'group';
+      groupDiv.id = name;
+      groupDiv.innerHTML = `<h2>${name}</h2>`;
+      board.appendChild(groupDiv);
+
+      const option = new Option(name, name);
+      groupSelect.add(option.cloneNode(true));
+      groupForItem.add(option.cloneNode(true));
+
+      document.getElementById('groupName').value = '';
+    }
+
+    function addSection() {
+      const groupName = groupSelect.value;
+      const sectionName = document.getElementById('sectionName').value;
+      if (!groupName || !sectionName || groups[groupName][sectionName]) return;
+
+      groups[groupName][sectionName] = [];
+
+      const groupDiv = document.getElementById(groupName);
+      const sectionDiv = document.createElement('div');
+      sectionDiv.className = 'section';
+      sectionDiv.id = `${groupName}_${sectionName}`;
+      sectionDiv.innerHTML = `<h3>${sectionName}</h3>`;
+      groupDiv.appendChild(sectionDiv);
+
+      if (groupForItem.value === groupName) {
+        const option = new Option(sectionName, `${groupName}_${sectionName}`);
+        sectionForItem.add(option);
+      }
+
+      document.getElementById('sectionName').value = '';
+    }
+
+    groupForItem.addEventListener('change', () => {
+      sectionForItem.innerHTML = '';
+      const groupName = groupForItem.value;
+      const sections = groups[groupName];
+      for (let s in sections) {
+        const option = new Option(s, `${groupName}_${s}`);
+        sectionForItem.add(option);
+      }
+    });
+
+    function addItem() {
+      const sectionId = sectionForItem.value;
+      const img = document.getElementById('itemImage').value;
+      const desc = document.getElementById('itemDesc').value;
+      const link = document.getElementById('itemLink').value;
+
+      if (!sectionId || !img || !desc || !link) return;
+
+      const sectionDiv = document.getElementById(sectionId);
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'item';
+      itemDiv.innerHTML = `
+        <img src="${img}" alt="Item Image">
+        <p>${desc}</p>
+        <a href="${link}" target="_blank">Buy Now</a>
+      `;
+
+      sectionDiv.appendChild(itemDiv);
+
+      document.getElementById('itemImage').value = '';
+      document.getElementById('itemDesc').value = '';
+      document.getElementById('itemLink').value = '';
+    }
+  </script>
+</body>
+</html>

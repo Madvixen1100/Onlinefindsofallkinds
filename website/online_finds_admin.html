@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Online Finds of All Kinds</title>
+  <style>
+    body {
+      font-family: 'Patrick Hand', cursive;
+      background-color: #ffe6f0;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #d63384;
+      font-size: 3em;
+      margin-bottom: 40px;
+    }
+    .group, .section, .item {
+      margin: 15px 0;
+      padding: 15px;
+      border-radius: 10px;
+      background-color: #fff0f5;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .group-header, .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .group-header img {
+      width: 100px;
+      height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-right: 15px;
+      border: 2px solid #d63384;
+    }
+    .section-header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-right: 15px;
+      border: 2px solid #d63384;
+    }
+    .group-title, .section-title {
+      font-size: 1.5em;
+      color: #c2185b;
+      margin: 0;
+    }
+    .item-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .item img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-right: 15px;
+    }
+    .item-description {
+      flex: 1;
+    }
+    a.button {
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: #d63384;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 1em;
+      margin-left: 15px;
+    }
+    .admin-panel input, .admin-panel textarea, .admin-panel select {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .admin-panel button {
+      background-color: #c2185b;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 5px;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <h1>Online Finds of All Kinds</h1>
+  <div id="content"></div>
+
+  <div class="admin-panel" id="admin-panel" style="display:none">
+    <h2>Add Group</h2>
+    <input type="text" id="group-name" placeholder="Group Name (e.g., Summer Finds)" />
+    <input type="text" id="group-img" placeholder="Group Image URL (optional)" />
+    <button onclick="addGroup()">Add Group</button>
+
+    <h2>Add Section</h2>
+    <select id="section-group-select"></select>
+    <input type="text" id="section-name" placeholder="Section Name (e.g., Shoes)" />
+    <input type="text" id="section-img" placeholder="Section Image URL (optional)" />
+    <button onclick="addSection()">Add Section</button>
+
+    <h2>Add Item</h2>
+    <select id="item-group-select"></select>
+    <select id="item-section-select"></select>
+    <input type="text" id="item-img" placeholder="Item Image URL" />
+    <textarea id="item-desc" placeholder="Item Description"></textarea>
+    <input type="text" id="item-link" placeholder="Purchase Link URL" />
+    <button onclick="addItem()">Add Item</button>
+  </div>
+
+  <script>
+    const isAdmin = window.location.search.includes('admin=true');
+    const STORAGE_KEY = 'onlineFindsData';
+
+    let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function updateDropdowns() {
+      const groupSelectSection = document.getElementById('section-group-select');
+      const groupSelectItem = document.getElementById('item-group-select');
+      const sectionSelectItem = document.getElementById('item-section-select');
+
+      groupSelectSection.innerHTML = '';
+      groupSelectItem.innerHTML = '';
+      sectionSelectItem.innerHTML = '';
+
+      data.forEach((group, groupIndex) => {
+        const opt1 = new Option(group.name, groupIndex);
+        const opt2 = new Option(group.name, groupIndex);
+        groupSelectSection.add(opt1);
+        groupSelectItem.add(opt2);
+      });
+
+      groupSelectItem.onchange = () => {
+        const selectedGroup = data[groupSelectItem.value];
+        sectionSelectItem.innerHTML = '';
+        if (!selectedGroup) return;
+        selectedGroup.sections.forEach((section, secIndex) => {
+          const opt = new Option(section.name, secIndex);
+          sectionSelectItem.add(opt);
+        });
+      };
+      groupSelectItem.onchange();
+    }
+
+    function addGroup() {
+      const name = document.getElementById('group-name').value.trim();
+      const img = document.getElementById('group-img').value.trim();
+      if (!name) return alert('Group name is required');
+      data.push({ name, img: img || '', sections: [] });
+      document.getElementById('group-name').value = '';
+      document.getElementById('group-img').value = '';
+      saveData();
+      render();
+      updateDropdowns();
+    }
+
+    function addSection() {
+      const groupIndex = document.getElementById('section-group-select').value;
+      const name = document.getElementById('section-name').value.trim();
+      const img = document.getElementById('section-img').value.trim();
+      if (!name) return alert('Section name is required');
+      if (!data[groupIndex]) return alert('Select a group first');
+      data[groupIndex].sections.push({ name, img: img || '', items: [] });
+      document.getElementById('section-name').value = '';
+      document.getElementById('section-img').value = '';
+      saveData();
+      render();
+      updateDropdowns();
+    }
+
+    function addItem() {
+      const groupIndex = document.getElementById('item-group-select').value;
+      const sectionIndex = document.getElementById('item-section-select').value;
+      const img = document.getElementById('item-img').value.trim();
+      const desc = document.getElementById('item-desc').value.trim();
+      const link = document.getElementById('item-link').value.trim();
+      if (!img || !desc || !link) return alert('Item image, description, and link are required');
+      if (!data[groupIndex] || !data[groupIndex].sections[sectionIndex]) return alert('Select a valid group and section');
+      data[groupIndex].sections[sectionIndex].items.push({ img, desc, link });
+      document.getElementById('item-img').value = '';
+      document.getElementById('item-desc').value = '';
+      document.getElementById('item-link').value = '';
+      saveData();
+      render();
+    }
+
+    function render() {
+      const container = document.getElementById('content');
+      container.innerHTML = '';
+      data.forEach(group => {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'group';
+
+        const groupHeader = document.createElement('div');
+        groupHeader.className = 'group-header';
+        if (group.img) {
+          const img = document.createElement('img');
+          img.src = group.img;
+          img.alt = `${group.name} image`;
+          groupHeader.appendChild(img);
+        }
+        const groupTitle = document.createElement('h2');
+        groupTitle.className = 'group-title';
+        groupTitle.textContent = group.name;
+        groupHeader.appendChild(groupTitle);
+        groupDiv.appendChild(groupHeader);
+
+        group.sections.forEach(section => {
+          const sectionDiv = document.createElement('div');
+          sectionDiv.className = 'section';
+
+          const sectionHeader = document.createElement('div');
+          sectionHeader.className = 'section-header';
+          if (section.img) {
+            const img = document.createElement('img');
+            img.src = section.img;
+            img.alt = `${section.name} image`;
+            sectionHeader.appendChild(img);
+          }
+          const sectionTitle = document.createElement('h3');
+          sectionTitle.className = 'section-title';
+          sectionTitle.textContent = section.name;
+          sectionHeader.appendChild(sectionTitle);
+          sectionDiv.appendChild(sectionHeader);
+
+          section.items.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item';
+            const itemContainer = document.createElement('div');
+            itemContainer.className = 'item-container';
+
+            const itemImg = document.createElement('img');
+            itemImg.src = item.img;
+            itemImg.alt = 'Item Image';
+
+            const itemDesc = document.createElement('div');
+            itemDesc.className = 'item-description';
+            itemDesc.textContent = item.desc;
+
+            const itemLink = document.createElement('a');
+            itemLink.className = 'button';
+            itemLink.href = item.link;
+            itemLink.target = '_blank';
+            itemLink.textContent = 'Buy Now';
+
+            itemContainer.appendChild(itemImg);
+            itemContainer.appendChild(itemDesc);
+            itemContainer.appendChild(itemLink);
+            itemDiv.appendChild(itemContainer);
+            sectionDiv.appendChild(itemDiv);
+          });
+
+          groupDiv.appendChild(sectionDiv);
+        });
+
+        container.appendChild(groupDiv);
+      });
+    }
+
+    if (isAdmin) {
+      document.getElementById('admin-panel').style.display = 'block';
+      updateDropdowns();
+    }
+
+    render();
+  </script>
+</body>
+</html>
